@@ -55,16 +55,16 @@ if [ $part_ans -eq 1 ]; then
     parted "$DISK" mkpart primary fat32 1MiB 1025MiB
     parted "$DISK" set 1 esp on
     parted "$DISK" name 1 BOOT
-    parted "$DISK" mkpart primary xfs 1025MiB 100%
+    parted "$DISK" mkpart primary btrfs 1025MiB 100%
     parted "$DISK" name 2 ROOT
 elif [ $part_ans -eq 2 ]; then
     parted "$DISK" mklabel gpt
     parted "$DISK" mkpart primary fat32 1MiB 1025MiB
     parted "$DISK" set 1 esp on
     parted "$DISK" name 1 BOOT
-    parted "$DISK" mkpart primary xfs 1025MiB 51GiB
+    parted "$DISK" mkpart primary btrfs 1025MiB 51GiB
     parted "$DISK" name 2 ROOT
-    parted "$DISK" mkpart primary xfs 51GiB 100%
+    parted "$DISK" mkpart primary btrfs 51GiB 100%
     parted "$DISK" name 3 HOME
 elif [ $part_ans -eq 3 ]; then
     parted "$DISK" mklabel gpt
@@ -73,9 +73,9 @@ elif [ $part_ans -eq 3 ]; then
     parted "$DISK" name 1 BOOT
     parted "$DISK" mkpart primary linux-swap 1025MiB 9GiB
     parted "$DISK" name 2 SWAP
-    parted "$DISK" mkpart primary xfs 9GiB 59GiB
+    parted "$DISK" mkpart primary btrfs 9GiB 59GiB
     parted "$DISK" name 3 ROOT
-    parted "$DISK" mkpart primary xfs 59GiB 100%
+    parted "$DISK" mkpart primary btrfs 59GiB 100%
     parted "$DISK" name 4 HOME
 else
     echo "invalid option chosen"
@@ -93,16 +93,16 @@ echo "Formatting partitions"
 if [[ "$DISK" =~ ^/dev/nvme ]]; then
     if [ $part_ans -eq 1 ]; then
         mkfs.fat -F 32 -n BOOT "${DISK}p1"
-        mkfs.xfs -f -L ROOT "${DISK}p2"
+        mkfs.btrfs -f -L ROOT "${DISK}p2"
     elif [ $part_ans -eq 2 ]; then
         mkfs.fat -F 32 -n BOOT "${DISK}p1"
-        mkfs.xfs -f -L ROOT "${DISK}p2"
-        mkfs.xfs -L HOME "${DISK}p3"
+        mkfs.btrfs -f -L ROOT "${DISK}p2"
+        mkfs.btrfs -L HOME "${DISK}p3"
     elif [ $part_ans -eq 3 ]; then
         mkfs.fat -F 32 -n BOOT "${DISK}p1"
         mkswap "${DISK}p2"
-        mkfs.xfs -f -L ROOT "${DISK}p3"
-        mkfs.xfs -L HOME "${DISK}p4"
+        mkfs.btrfs -f -L ROOT "${DISK}p3"
+        mkfs.btrfs -L HOME "${DISK}p4"
     else
         echo "Error: could not format the partitions"
         exit 1
@@ -111,16 +111,16 @@ else
     # If disk is SATA (e.g., /dev/sda)
     if [ $part_ans -eq 1 ]; then
         mkfs.fat -F 32 -n BOOT "${DISK}1"
-        mkfs.xfs -f -L ROOT "${DISK}2"
+        mkfs.btrfs -f -L ROOT "${DISK}2"
     elif [ $part_ans -eq 2 ]; then
         mkfs.fat -F 32 -n BOOT "${DISK}1"
-        mkfs.xfs -f -L ROOT "${DISK}2"
-        mkfs.xfs -L HOME "${DISK}3"
+        mkfs.btrfs -f -L ROOT "${DISK}2"
+        mkfs.btrfs -L HOME "${DISK}3"
     elif [ $part_ans -eq 3 ]; then
         mkfs.fat -F 32 -n BOOT "${DISK}1"
         mkswap "${DISK}2"
-        mkfs.xfs -f -L ROOT "${DISK}3"
-        mkfs.xfs -L HOME "${DISK}4"
+        mkfs.btrfs -f -L ROOT "${DISK}3"
+        mkfs.btrfs -L HOME "${DISK}4"
     else
         echo "Error: could not format the partitions"
         exit 1
@@ -200,7 +200,7 @@ sleep 2
 
 
 # Installing packages
-pacstrap -K /mnt base linux linux-firmware-intel linux-firmware-nvidia linux-firmware-realtek intel-ucode dosfstools ntfs-3g xfsprogs efibootmgr grub os-prober networkmanager sudo vim man-pages man-db base-devel git
+pacstrap -K /mnt base linux linux-firmware-intel linux-firmware-nvidia linux-firmware-realtek intel-ucode dosfstools ntfs-3g btrfsprogs efibootmgr grub os-prober networkmanager sudo vim man-pages man-db base-devel git
 
 
 # Generate fstab file.
@@ -261,9 +261,9 @@ EDITOR='sed -i "s/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/"' visudo
 
 # GRUB installation
 grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=grub --removable --recheck
-#grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=grub --recheck
+grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=grub --recheck
 
-#sed -i '/#GRUB_DISABLE_OS_PROBER/s/^#//' "/etc/default/grub"
+sed -i '/#GRUB_DISABLE_OS_PROBER/s/^#//' "/etc/default/grub"
 
 grub-mkconfig -o /boot/grub/grub.cfg
 
